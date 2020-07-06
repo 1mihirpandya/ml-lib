@@ -5,56 +5,83 @@ import numpy as np
 class LinearRegression:
     def __init__(self, order=1, x=None, y=None):
         self.order = order + 1
+        self.m = 0
+        self.c = 0
         self.weights = np.zeros(self.order)
         self.raw_func = lambda x: np.array([x**exp for exp in range(self.order - 1, -1, -1)])
-        self.loss = lambda y_true, y_pred: (y_true - y_pred)**2
+        self.loss = []
         if x and y:
             self.init(x, y)
 
     def init(self, x, y):
         self.x = np.array(x)
         self.y = np.array(y)
+        #std_x = np.std(self.x)
+        #mean_x = np.mean(self.x)
+        #self.x = (self.x - mean_x)/std_x
+        #std_y = np.std(self.y)
+        #mean_y = np.mean(self.y)
+        #self.y = (self.y - mean_y)/std_y
+        ax2.scatter(self.x, self.y)
+
+    def mse(self, pred, y):
+        return np.sum((y - pred)**2)/len(y)
+
+    def rmse(self, pred, y):
+        return np.sqrt(self.mse(pred, y))
+
+    def rmse_loss(self, pred, x, y):
+        mse = self.mse(pred, y)
+        return -1.0/len(y) * (mse ** -0.5) * np.dot(self.raw_func(x), (y - pred))
 
     def run(self, batch_size=10, learning_rate=0.0001, epochs=1000):
         for epoch in range(epochs):
             idxs = np.random.choice(self.x.size, batch_size, replace=True)
-            mini_batch_x = np.array([self.x[idx] for idx in idxs])
-            mini_batch_y = np.array([self.y[idx] for idx in idxs])
-            print(mini_batch_x)
+            mini_batch_x = self.x#np.array([self.x[idx] for idx in idxs])
+            mini_batch_y = self.y#np.array([self.y[idx] for idx in idxs])
+            """print(mini_batch_x)
             print("mini_batch_x^")
             print(mini_batch_y)
             print("mini_batch_y^")
             print(self.raw_func(mini_batch_x))
             print("raw^")
             print(np.dot(self.weights, self.raw_func(mini_batch_x)))
-            print("preds^")
+            print("preds^")"""
 
-            preds = np.dot(self.weights, self.raw_func(mini_batch_x))
+            preds = (self.m * mini_batch_x) + self.c
 
 
-            print((mini_batch_y - preds))
+            """print((mini_batch_y - preds))
             print("piecewise^")
             print(np.dot(self.raw_func(mini_batch_x), (mini_batch_y - preds)))
-            print("d_weights^")
+            print("d_weights^")"""
 
-            d_weights = (-2.0/batch_size) * np.dot(self.raw_func(mini_batch_x), (mini_batch_y - preds))
-            self.weights = self.weights - learning_rate * d_weights
-            print(self.weights)
-            print("weights^\n")
+            #d_weights = self.rmse_loss(preds, mini_batch_x, mini_batch_y)#(-1/(2.0 * batch_size)) * np.dot(self.raw_func(mini_batch_x), 1/(mini_batch_y - preds))
+            d_m = (-2.0 / batch_size) * np.sum(mini_batch_x * (mini_batch_y - preds))
+            d_c = (-2.0 / batch_size) * np.sum((mini_batch_y - preds))
+            self.m -= learning_rate * d_m
+            self.c -= learning_rate * d_c
+            self.loss.append(sum([data**2 for data in (mini_batch_y-preds)]) / 1000)
+            #print(d_weights)
+            #print("d_weights^")
+            #self.weights = self.weights - learning_rate * d_weights
+            #print(self.weights)
+            #print("weights^\n")
 
     def show(self):
-        preds = np.dot(self.weights, self.raw_func(self.x))
-        plt.plot(self.x, preds, color='green')
+        preds = self.m * self.x + self.c
+        ax2.plot(self.x, preds, color='green')
+        ax3.plot(range(1000), self.loss)
         plt.show()
 
-
-x_vals = np.array(range(-100,100))
-y_vals = np.array([1.5 * x**2 + x + random.randint(-50,5) for x in x_vals])
+fig2, (ax2, ax3) = plt.subplots(nrows=2, ncols=1)
+x_vals = x_vals = x = np.array([random.randint(-100, 100) for p in range(0, 1000)])
+y_vals = np.array([1.5 * x + random.randint(-50,100) for x in x_vals])
+#y_vals = np.array([1.5 * x**2 + x + random.randint(-50,5) for x in x_vals])
 data = zip(x_vals, y_vals)
-plt.scatter(x_vals, y_vals)
-model = LinearRegression(order=2)
+model = LinearRegression(order=1)
 model.init(x_vals, y_vals)
-model.run(learning_rate=0.000001)
+model.run(batch_size=1000)
 model.show()
 #preds = [func(x) for x in x_vals]
 #plt.plot(x_vals, preds, color='green')
