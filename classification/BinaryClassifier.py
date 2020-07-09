@@ -19,7 +19,7 @@ class LogisticRegression:
     def init(self, x, y):
         self.x = x.copy()
         self.dim = self.x.shape
-        self.weights = np.zeros(self.dim[0] + 1) + 0.5
+        self.weights = np.zeros(self.dim[0] + 1)
         self.labels = np.array(y)
         for feature_idx in range(self.dim[0]):
             row = self.x[feature_idx]
@@ -29,6 +29,13 @@ class LogisticRegression:
         added = np.ones((1,self.dim[1]))
         self.x = np.append(self.x, added, axis=0)
 
+    def log_loss(self):
+        piece = self.sigmoid(np.dot(self.weights, self.x))
+        return (-1/self.dim[1])*(np.sum((self.labels*np.log(piece)) + ((1-self.labels)*(np.log(1-piece)))))
+
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
     def run(self, batch_size=10, learning_rate=0.0001, epochs=1000, show_loss=False):
         self.epochs = epochs
         for epoch in range(epochs):
@@ -36,7 +43,7 @@ class LogisticRegression:
             idxs.sort()
             mini_batch_x = np.array([self.x[:, idx] for idx in idxs]).T
             mini_batch_labels = np.array([self.labels[idx] for idx in idxs])
-            h = 1 / (1 + np.exp(-np.dot(self.weights, mini_batch_x)))
+            h = self.sigmoid(np.dot(self.weights, mini_batch_x))
             gradient = np.dot(mini_batch_x, (h - mini_batch_labels)) / mini_batch_labels.size
             self.weights = self.weights - learning_rate * gradient
             if show_loss:
