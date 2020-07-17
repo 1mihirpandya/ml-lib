@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 from BinaryClassifier import LogisticRegression
+from MultiClassClassification import SoftmaxRegression
+from sklearn.datasets import load_iris
 
 x = []
 labels = []
@@ -18,13 +20,28 @@ labels = np.array(labels)
 
 model = LogisticRegression()
 model.init(x, labels)
-model.run(batch_size=len(labels), learning_rate=0.01, epochs=4000, show_loss=True)
+model.run(batch_size=100, learning_rate=0.01, epochs=4000, show_loss=True)
 pp = model.pred(x)
 c = 0
 for idx in range(len(pp)):
     if pp[idx] and labels[idx] == 1:
         c += 1
     elif not pp[idx] and labels[idx] == -1:
+        c += 1
+print(c/len(labels))
+model.draw()
+
+data = load_iris()
+x = data.data.T
+labels = data.target
+
+model = SoftmaxRegression()
+model.init(x, labels, 3)
+model.run(batch_size=100, learning_rate=0.01, epochs=4000, show_loss=True)
+pp = model.pred(x)
+c = 0
+for idx in range(len(pp)):
+    if pp[idx] == labels[idx]:
         c += 1
 print(c/len(labels))
 model.draw()
