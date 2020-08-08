@@ -1,6 +1,7 @@
 from sklearn.datasets import load_breast_cancer
 from sklearn.datasets import load_iris
 from RandomForest import DecisionTree
+import pandas as pd
 import time
 
 from sklearn import tree
@@ -16,8 +17,12 @@ for idx in range(len(preds)):
         cc += 1
 print(cc/len(data.target))
 
+print(time.time())
 dt = DecisionTree()
-dt.init(data.data, data.target, ["cont" for _ in range(len(data.feature_names))])
+d = pd.DataFrame(data.data)
+d[len(d.columns)] = data.target
+dt.init(d, ["cont" for _ in range(len(data.feature_names))])
+print(time.time())
 cc = 0
 for idx in range(len(data.target)):
     if dt.predict(data.data[idx]) == data.target[idx]:
