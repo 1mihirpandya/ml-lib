@@ -29,14 +29,14 @@ class DecisionTree:
         reduction, split_value = 0, 0
         for feature_idx in range(len(df.columns) - 1):
             if features[feature_idx] == "cont":
-                split_point = DecisionTree.find_split_point(df[[feature_idx, y_idx]])
-                reduction, split_value = DecisionTree.gini_reduction_cont(df[[feature_idx, y_idx]], split_point)
+                reduction, split_value = DecisionTree.find_split_point(df[[feature_idx, y_idx]])
             else:
                 reduction, split_value = DecisionTree.gini_reduction(df[[feature_idx, y_idx]])
             if reduction > greatest_reduction:
                 greatest_reduction = reduction
                 best_split_feature = feature_idx
                 best_split_value = split_value
+
         self.split_feature = best_split_feature
         self.split_value = best_split_value
         self.split_feature_type = self.features[self.split_feature]
@@ -52,27 +52,40 @@ class DecisionTree:
         else:
             match_df = df[df[self.split_feature] == self.split_value]
             not_match_df = df[df[self.split_feature] != self.split_value]
-        #print(match_df)
+
         self.left.init(match_df, self.features)
         self.right.init(not_match_df, self.features)
 
     def find_split_point(feature_df):
         col_idx = feature_df.columns[0]
-        max_info_gain = -np.inf
+        y_idx = feature_df.columns[-1]
+        best_reduction = -np.inf
         best_split_point = 1
-        feature_df = feature_df.reset_index(drop=True)
         feature_df = feature_df.sort_values(col_idx)
-        entropy = DecisionTree.info_entropy(feature_df[feature_df.columns[-1]])
+        feature_df = feature_df.reset_index(drop=True)
+
+        gini = DecisionTree.gini_index(feature_df)
+        left_count, right_count = 0, len(feature_df)
+        card = np.max(feature_df[y_idx]) + 1
+        left, right = np.zeros(card), np.zeros(card)
+
+        for idx in range(0, len(feature_df)):
+            right[int(feature_df[y_idx][idx])] += 1
 
         for split_idx in range(0, len(feature_df) - 1):
             split_point = (feature_df[col_idx][split_idx] + feature_df[col_idx][split_idx + 1]) / 2
-            l = feature_df.loc[:split_idx,:]
-            r = feature_df.loc[split_idx + 1:,:]
-            info_gain_val = entropy - DecisionTree.info_needed(l, r)
-            if info_gain_val > max_info_gain:
-                max_info_gain = info_gain_val
+            left_count += 1
+            right_count -= 1
+            left[int(feature_df[y_idx][split_idx])] += 1
+            right[int(feature_df[y_idx][split_idx])] -= 1
+
+            gini_reduction = left_count / (left_count + right_count) * (1 - np.sum([(freq/left_count)**2 for freq in left]))
+            gini_reduction += right_count / (left_count + right_count) * (1 - np.sum([(freq/right_count)**2 for freq in right]))
+            gini_reduction = gini - gini_reduction
+            if gini_reduction > best_reduction:
+                best_reduction = gini_reduction
                 best_split_point = split_point
-        return best_split_point
+        return best_reduction, best_split_point
 
     def info_entropy(y_col):
         frequency_col = y_col.value_counts()
@@ -95,14 +108,13 @@ class DecisionTree:
             ret -= (len(df[df[df.columns[-1]] == y])/total)**2
         return ret
 
-    def gini_reduction_cont(df, split_val):
-        total_vals = len(df)
-        total_gini_index = DecisionTree.gini_index(df)
-        match_df = df[df[df.columns[0]] < split_val]
-        not_match_df = df[df[df.columns[0]] > split_val]
-        gini_index = len(match_df)/total_vals * DecisionTree.gini_index(match_df) + len(not_match_df)/total_vals * DecisionTree.gini_index(not_match_df)
-        gini_reduction = total_gini_index - gini_index
-        return gini_reduction, split_val
+    # def gini_reduction_cont(df, split_val):
+    #     total_vals = len(df)
+    #     match_df = df[df[df.columns[0]] < split_val]
+    #     not_match_df = df[df[df.columns[0]] > split_val]
+    #     gini_index = len(match_df)/total_vals * DecisionTree.gini_index(match_df) + len(not_match_df)/total_vals * DecisionTree.gini_index(not_match_df)
+    #     gini_reduction = gini_index
+    #     return gini_reduction, split_val
 
     def gini_reduction_cat(df):
         total_vals = len(df)
