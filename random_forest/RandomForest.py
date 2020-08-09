@@ -31,7 +31,7 @@ class DecisionTree:
             if features[feature_idx] == "cont":
                 reduction, split_value = DecisionTree.find_split_point(df[[feature_idx, y_idx]])
             else:
-                reduction, split_value = DecisionTree.gini_reduction(df[[feature_idx, y_idx]])
+                reduction, split_value = DecisionTree.gini_reduction_cat(df[[feature_idx, y_idx]])
             if reduction > greatest_reduction:
                 greatest_reduction = reduction
                 best_split_feature = feature_idx
@@ -74,6 +74,8 @@ class DecisionTree:
 
         for split_idx in range(0, len(feature_df) - 1):
             split_point = (feature_df[col_idx][split_idx] + feature_df[col_idx][split_idx + 1]) / 2
+            if split_point == feature_df[col_idx][split_idx]:
+                continue
             left_count += 1
             right_count -= 1
             left[int(feature_df[y_idx][split_idx])] += 1
@@ -122,9 +124,11 @@ class DecisionTree:
 
         greatest_reduction = -np.inf
         best_split_value = 0
-        for possible_value in range(int(np.max(df[df.columns[0]])) + 1):
+        for possible_value in range(np.max(df[df.columns[0]]) + 1):
             match_df = df[df[df.columns[0]] == possible_value]
             not_match_df = df[df[df.columns[0]] != possible_value]
+            if len(match_df) == 0 or len(not_match_df) == 0:
+                continue
 
             gini_index = len(match_df)/total_vals * DecisionTree.gini_index(match_df) + len(not_match_df)/total_vals * DecisionTree.gini_index(not_match_df)
             gini_reduction = total_gini_index - gini_index
