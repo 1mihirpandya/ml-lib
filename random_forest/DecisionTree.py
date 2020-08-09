@@ -4,7 +4,7 @@ import random
 import math
 import time
 
-class RandomDecisionTree:
+class DecisionTree:
     def __init__(self):
         self.left, self.right = None, None
         self.features = []
@@ -19,13 +19,11 @@ class RandomDecisionTree:
         best_split_feature = 0
         best_split_value = 0
         reduction, split_value = 0, 0
-        random_feature_set = np.random.choice(df.columns[:-1], np.random.randint(0, len(self.features)), replace=False)
-        random_feature_set.sort()
-        for feature_idx in random_feature_set:
+        for feature_idx in df.columns[:-1]:
             if features[feature_idx] == "cont":
-                reduction, split_value = RandomDecisionTree.find_split_point(df[[feature_idx, y_idx]])
+                reduction, split_value = DecisionTree.find_split_point(df[[feature_idx, y_idx]])
             else:
-                reduction, split_value = RandomDecisionTree.gini_reduction_cat(df[[feature_idx, y_idx]])
+                reduction, split_value = DecisionTree.gini_reduction_cat(df[[feature_idx, y_idx]])
             if reduction > greatest_reduction:
                 greatest_reduction = reduction
                 best_split_feature = feature_idx
@@ -39,8 +37,8 @@ class RandomDecisionTree:
         self.split_value = best_split_value
         self.split_feature_type = self.features[self.split_feature]
 
-        self.left = RandomDecisionTree()
-        self.right = RandomDecisionTree()
+        self.left = DecisionTree()
+        self.right = DecisionTree()
 
         match_df = None
         not_match_df = None
@@ -74,7 +72,7 @@ class RandomDecisionTree:
         feature_df = feature_df.sort_values(col_idx)
         feature_df = feature_df.reset_index(drop=True)
 
-        gini = RandomDecisionTree.gini_index(feature_df)
+        gini = DecisionTree.gini_index(feature_df)
         left_count, right_count = 0, len(feature_df)
         card = np.max(feature_df[y_idx]) + 1
         left, right = np.zeros(card), np.zeros(card)
@@ -109,8 +107,8 @@ class RandomDecisionTree:
     def info_needed(l_df, r_df):
         total = len(l_df) + len(r_df)
         info_needed = 0
-        info_needed += len(l_df)/total * RandomDecisionTree.info_entropy(l_df[l_df.columns[-1]])
-        info_needed += len(r_df)/total * RandomDecisionTree.info_entropy(r_df[r_df.columns[-1]])
+        info_needed += len(l_df)/total * DecisionTree.info_entropy(l_df[l_df.columns[-1]])
+        info_needed += len(r_df)/total * DecisionTree.info_entropy(r_df[r_df.columns[-1]])
         return info_needed
 
     def gini_index(df):
@@ -130,7 +128,7 @@ class RandomDecisionTree:
 
     def gini_reduction_cat(df):
         total_vals = len(df)
-        total_gini_index = RandomDecisionTree.gini_index(df)
+        total_gini_index = DecisionTree.gini_index(df)
 
         greatest_reduction = -np.inf
         best_split_value = 0
@@ -140,7 +138,7 @@ class RandomDecisionTree:
             if len(match_df) == 0 or len(not_match_df) == 0:
                 continue
 
-            gini_index = len(match_df)/total_vals * RandomDecisionTree.gini_index(match_df) + len(not_match_df)/total_vals * RandomDecisionTree.gini_index(not_match_df)
+            gini_index = len(match_df)/total_vals * DecisionTree.gini_index(match_df) + len(not_match_df)/total_vals * DecisionTree.gini_index(not_match_df)
             gini_reduction = total_gini_index - gini_index
             if gini_reduction > greatest_reduction:
                 greatest_reduction = gini_reduction
@@ -160,32 +158,3 @@ class RandomDecisionTree:
                 return self.left.predict(x)
             else:
                 return self.right.predict(x)
-
-class RandomForest:
-    def __init__(self):
-        self.trees = []
-        self.features = []
-
-    def init(self, df, features, num_trees):
-        self.features = features
-        for _ in range(num_trees):
-            tree = RandomDecisionTree()
-            shard_size = np.random.randint(len(df)//(num_trees + 1), len(df))
-            #num_features = np.random.randint(1, len(features) - 1)
-            #feature_idxs = np.random.choice(len(features) - 1, num_features, replace=False)
-            #feature_idxs.sort()
-            #feature_idxs = np.append(feature_idxs, df.columns[-1])
-            shard = df.sample(n=shard_size, replace=True)
-            #shard = shard[feature_idxs]
-            tree.init(shard, self.features)
-            self.trees.append(tree)
-
-    def predict(self, x):
-        freq = {}
-        for tree in self.trees:
-            pred = tree.predict(x)
-            if pred in freq:
-                freq[pred] += 1
-            else:
-                freq[pred] = 1
-        return max(freq.keys(), key=lambda k: freq[k])

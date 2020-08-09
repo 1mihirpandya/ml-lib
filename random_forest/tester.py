@@ -1,30 +1,32 @@
-from sklearn.datasets import load_breast_cancer
-from sklearn.datasets import load_iris
-from RandomForest import DecisionTree
+from sklearn.datasets import load_breast_cancer, load_iris
+from RandomForest import RandomForest
+from DecisionTree import DecisionTree
 import pandas as pd
 import time
 
-from sklearn import tree
 data = load_breast_cancer()
-iris = load_iris()
-print()
-clf = tree.DecisionTreeClassifier()
-clf.fit(data.data, data.target)
-preds = clf.predict(data.data)
-cc = 0
-for idx in range(len(preds)):
-    if preds[idx] == data.target[idx]:
-        cc += 1
-print(cc/len(data.target))
 
-print(time.time())
+#Requires data to be in Pandas dataframe with targets (targets need to be the last column)
+#All categorical variables need to be numerically classified (0, 1, 2, etc)
+
+#Decision tree test
 dt = DecisionTree()
 d = pd.DataFrame(data.data)
 d[len(d.columns)] = data.target
-dt.init(d, ["cont" for _ in range(len(data.feature_names))])
-print(time.time())
+dt.init(d, ["cont" for _ in range(len(d.columns) - 1)])
 cc = 0
-for idx in range(len(data.target)):
+for idx in range(len(data.data)):
+    if dt.predict(data.data[idx]) == data.target[idx]:
+        cc += 1
+print(cc/len(data.target))
+
+#Random forest test
+dt = RandomForest()
+d = pd.DataFrame(data.data)
+d[len(d.columns)] = data.target
+dt.init(d, ["cont" for _ in range(len(d.columns) - 1)], 5)
+cc = 0
+for idx in range(len(data.data)):
     if dt.predict(data.data[idx]) == data.target[idx]:
         cc += 1
 print(cc/len(data.target))
